@@ -23,6 +23,8 @@ Repo:		    Database\LidoIM\StoredProcedures
 Revisions
 Date            Developer       Change
 2023-01-10      B Strathman     Created
+2023-02-28      B Strathman     Replaced the LidoAdvisor columns with five new columns: SeniorWealthAdvisor,
+                                SeniorWealthManager1, SenorWealthManager2, MarketLeader, and PCS
 ***********************************************/
 
 CREATE OR ALTER PROCEDURE [dbimport].[usp_ImportAddeparAccounts] (
@@ -75,7 +77,8 @@ BEGIN
     -- Parse the JSON data and load it to dbimport.AddeparAccounts
     BEGIN TRY
         INSERT INTO dbimport.AddeparAccounts (EntityID, AccountName, AccountNumber, Relationship, InceptionDate, Registration, 
-                                                AccountValue, LidoAdvisor, FinancialService, ErisaPooledPlan, Discretionary, 
+                                                AccountValue, SeniorWealthAdvisor, SeniorWealthManager1, SeniorWealthManager2, 
+                                                MarketLeader, PCS, FinancialService, ErisaPooledPlan, Discretionary, 
                                                 RiskProfile, RiskProfileDate, TotalNetWorth, LiquidNetWorth, OAccount, ImportFileName)
         SELECT 
             JSON_VALUE(grp.Value, '$.entity_id') AS EntityID,
@@ -85,7 +88,11 @@ BEGIN
             JSON_VALUE(grp.Value, '$.columns.inception_event_date') AS InceptionDate,
             JSON_VALUE(grp.Value, '$.columns._custom_registration_298373') AS Registration,
             JSON_VALUE(grp.Value, '$.columns.value') AS AccountValue,
-            JSON_VALUE(grp.Value, '$.columns._custom_lido_advisor_178227') AS LidoAdvisor,
+            JSON_VALUE(grp.Value, '$.columns._custom_senior_wealth_advisor_bdo_978077') AS SeniorWealthAdvisor,
+            JSON_VALUE(grp.Value, '$.columns._custom_senior_wealth_manager_978078') AS SeniorWealthManager1,
+            JSON_VALUE(grp.Value, '$.columns._custom_copy_of_senior_wealth_manager_2_978079') AS SeniorWealthManager2,
+            JSON_VALUE(grp.Value, '$.columns._custom_market_leader_978076') AS MarketLeader,
+            JSON_VALUE(grp.Value, '$.columns._custom_pcs_1195051') AS PCS,
             JSON_VALUE(grp.Value, '$.columns.financial_service') AS FinancialService,
             JSON_VALUE(grp.Value, '$.columns._custom_erisa_pooled_plan_698408') AS ErisaPooledPlan,
             JSON_VALUE(grp.Value, '$.columns._custom_discretionary_298374') AS Discretionary,

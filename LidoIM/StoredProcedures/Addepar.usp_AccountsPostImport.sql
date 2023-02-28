@@ -21,6 +21,8 @@ Repo:		    Database\LidoIM\StoredProcedures
 Revisions
 Date            Developer       Change
 2023-01-10      B Strathman     Created
+2023-02-28      B Strathman     Replaced the LidoAdvisor columns with five new columns: SeniorWealthAdvisor,
+                                SeniorWealthManager1, SenorWealthManager2, MarketLeader, and PCS
 ***********************************************/
 
 CREATE OR ALTER PROCEDURE [Addepar].[usp_AccountsPostImport]
@@ -133,6 +135,8 @@ BEGIN
                 AND s.RowProcessed = @RP_IN_PROGRESS 
             
             -- Update pre-existing Accounts
+            -- The "Lido Advisor" columns (SeniorWealthAdvisor, SeniorWealthManager1, SeniorWealthManager2, MarketLeader, and PCS)
+            -- are sometimes left NULL and sometimes filled with '-'. Override any instances of '-' with NULL.
             WHEN MATCHED AND s.RowProcessed = @RP_IN_PROGRESS THEN UPDATE SET 
                     AccountName         = s.AccountName,
                     AccountNumber       = s.AccountNumber,
@@ -140,7 +144,11 @@ BEGIN
                     InceptionDate       = TRY_CONVERT(date, s.InceptionDate),
                     Registration        = s.Registration,
                     AccountValue        = CAST(TRY_CONVERT(float, s.AccountValue) AS money),
-                    LidoAdvisor         = s.LidoAdvisor,
+                    SeniorWealthAdvisor = CASE WHEN RTRIM(LTRIM(s.SeniorWealthAdvisor)) = '-' THEN NULL ELSE s.SeniorWealthAdvisor END,
+                    SeniorWealthManager1= CASE WHEN RTRIM(LTRIM(s.SeniorWealthManager1)) = '-' THEN NULL ELSE s.SeniorWealthManager1 END,
+                    SeniorWealthManager2= CASE WHEN RTRIM(LTRIM(s.SeniorWealthManager2)) = '-' THEN NULL ELSE s.SeniorWealthManager2 END,
+                    MarketLeader        = CASE WHEN RTRIM(LTRIM(s.MarketLeader)) = '-' THEN NULL ELSE s.MarketLeader END,
+                    PCS                 = CASE WHEN RTRIM(LTRIM(s.PCS)) = '-' THEN NULL ELSE s.PCS END,
                     FinancialService    = s.FinancialService,
                     ErisaPooledPlan     = TRY_CONVERT(bit, s.ErisaPooledPlan),
                     Discretionary       = TRY_CONVERT(bit, s.Discretionary),
@@ -155,12 +163,18 @@ BEGIN
             -- Insert new accounts into the target table
             WHEN NOT MATCHED BY TARGET AND s.RowProcessed = @RP_IN_PROGRESS THEN 
                     INSERT (EntityID, AccountName, AccountNumber, Relationship, InceptionDate, 
-                            Registration, AccountValue, LidoAdvisor, FinancialService, 
+                            Registration, AccountValue, SeniorWealthAdvisor, SeniorWealthManager1, 
+                            SeniorWealthManager2, MarketLeader, PCS, FinancialService, 
                             ErisaPooledPlan, Discretionary, RiskProfile, 
                             RiskProfileDate, TotalNetWorth, 
                             LiquidNetWorth, OAccount)
                     VALUES (CAST(s.EntityID AS int), s.AccountName, s.AccountNumber, s.Relationship, TRY_CONVERT(date, s.InceptionDate), 
-                            s.Registration, CAST(TRY_CONVERT(float, s.AccountValue) AS money), s.LidoAdvisor, s.FinancialService, 
+                            s.Registration, CAST(TRY_CONVERT(float, s.AccountValue) AS money), 
+                            CASE WHEN RTRIM(LTRIM(s.SeniorWealthAdvisor)) = '-' THEN NULL ELSE s.SeniorWealthAdvisor END, 
+                            CASE WHEN RTRIM(LTRIM(s.SeniorWealthManager1)) = '-' THEN NULL ELSE s.SeniorWealthManager1 END,
+                            CASE WHEN RTRIM(LTRIM(s.SeniorWealthManager2)) = '-' THEN NULL ELSE s.SeniorWealthManager2 END,
+                            CASE WHEN RTRIM(LTRIM(s.MarketLeader)) = '-' THEN NULL ELSE s.MarketLeader END,
+                            CASE WHEN RTRIM(LTRIM(s.PCS)) = '-' THEN NULL ELSE s.PCS END, s.FinancialService, 
                             TRY_CONVERT(bit, s.ErisaPooledPlan), TRY_CONVERT(bit, s.Discretionary), s.RiskProfile, 
                             TRY_CONVERT(date, s.RiskProfileDate), CAST(TRY_CONVERT(float, s.TotalNetWorth) AS money),
                             CAST(TRY_CONVERT(float, s.LiquidNetWorth) AS money), TRY_CONVERT(bit, s.OAccount))
